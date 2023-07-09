@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createTRPCRouter, privateProcedure, publicProcedure } from "~/server/api/trpc";
 import { filterUserForClient } from "~/server/helper/filterUserForClient";
 
-const addUSerDataToPosts = async (posts: Post[]) => {
+const addUserDataToPosts = async (posts: Post[]) => {
   const users = (await clerkClient.users.getUserList({
     userId : posts.map((post) => post.authorId),
     limit : 100,
@@ -32,7 +32,7 @@ export const postsRouter = createTRPCRouter({
     });
 
 
-    return addUSerDataToPosts(posts)
+    return addUserDataToPosts(posts)
   }),
 getPostsByUserId : publicProcedure.input(z.object({
   userId : z.string()
@@ -43,7 +43,19 @@ getPostsByUserId : publicProcedure.input(z.object({
     },
     take : 100,
     orderBy : {createdAt : 'desc'}
-  }).then(addUSerDataToPosts)
+  }).then(addUserDataToPosts)
+})
+,
+getById: publicProcedure.input(z.object({
+  id : z.string()
+})).query(async ({ctx, input}) => {
+  const post = await ctx.prisma.post.findUnique({
+    where : {
+      id : input.id
+    }
+  })
+  if (!post) throw new TRPCError({code : 'NOT_FOUND'})
+  return (await addUserDataToPosts([post]))[0];
 })
 ,
 create : privateProcedure.input(z.object({

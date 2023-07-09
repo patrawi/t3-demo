@@ -11,6 +11,7 @@ import { LoadingPage } from "~/components/loading";
 import { PostView } from "~/components/postview";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { generateSSRHelper } from "~/server/helper/ssrHelper";
 dayjs.extend(relativeTime);
 const ProfileFeed = (props: { userId: string }) => {
   const { data, isLoading } = api.posts.getPostsByUserId.useQuery({
@@ -59,18 +60,13 @@ const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const helpers = createServerSideHelpers({
-    router: appRouter,
-    ctx: { prisma, userId: null },
-    transformer: superjson,
-  });
+  const helpers = generateSSRHelper();
   const slug = context.params?.slug;
   if (typeof slug !== "string") throw new Error("no slug");
   const username = slug.replace("@", "");
   await helpers.profile.getUserByUsername.prefetch({
     username: username,
   });
-  console.log("dog");
   return {
     props: {
       trpcState: helpers.dehydrate(),
